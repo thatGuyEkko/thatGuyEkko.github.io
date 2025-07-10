@@ -47,6 +47,11 @@
             border-radius: 4px;
             border: 1px solid #bbb;
         }
+        #modeSelect {
+            min-width: 140px;
+            max-width: 220px;
+            width: 180px;
+        }
         .stones-area {
             display: flex;
             flex-wrap: wrap;
@@ -86,6 +91,11 @@
             .log-area { font-size: 0.95em; }
             .stone { font-size: 1.5em; }
         }
+        .button-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
     </style>
 </head>
 <body>
@@ -107,7 +117,9 @@
         <div class="input-row">
             <label>石子总数: <input type="number" id="totalStones" min="6" max="99" value="9"></label>
         </div>
-        <button onclick="startGame()">开始游戏</button>
+        <div class="button-row">
+            <button onclick="startGame()">开始游戏</button>
+        </div>
     </div>
     <div id="game" style="display:none;">
         <div class="info" id="status"></div>
