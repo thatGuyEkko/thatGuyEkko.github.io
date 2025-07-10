@@ -47,7 +47,7 @@
             border-radius: 4px;
             border: 1px solid #bbb;
         }
-        #modeSelect { min-width: 140px; max-width: 220px; width: 180px; }
+        #modeSelect, #ruleSelect { min-width: 140px; max-width: 220px; width: 180px; }
         .game-scene {
             display: flex;
             align-items: flex-end;
@@ -143,11 +143,19 @@
             </label>
         </div>
         <div class="input-row">
+            <label>游戏规则:
+                <select id="ruleSelect" onchange="onRuleChange()">
+                    <option value="2">每次可捡1-2颗</option>
+                    <option value="3">每次可捡1-3颗</option>
+                </select>
+            </label>
+        </div>
+        <div class="input-row">
             <label>玩家1: <input type="text" id="player1" value="你"></label>
             <label id="player2Label" style="display:none;">玩家2: <input type="text" id="player2" value="对手"></label>
         </div>
         <div class="input-row">
-            <label>石子总数: <input type="number" id="totalStones" min="6" max="99" value="9"></label>
+            <label>石子总数: <input type="number" id="totalStones" min="6" max="99" value="12"></label>
         </div>
         <div class="button-row">
             <button onclick="startGame()">开始游戏</button>
@@ -161,10 +169,7 @@
             <div class="avatar" id="avatar1">🤖</div>
         </div>
         <div class="info">剩余石子数：<span id="stones"></span></div>
-        <div class="actions">
-            <button id="pick1" onclick="pickStones(1)">捡1颗</button>
-            <button id="pick2" onclick="pickStones(2)">捡2颗</button>
-        </div>
+        <div class="actions" id="actions"></div>
         <div class="winner" id="winner" style="color:green;"></div>
         <div class="log-area" id="logArea"></div>
         <button onclick="resetGame()">重新开始</button>
@@ -178,6 +183,7 @@
     let log = [];
     let stonesArr = [];
     let mode = "ai"; // "ai" or "pvp"
+    let maxPick = 2;
     const AI_NAME = "捡石子大王-邹是好看";
     const AVATARS = ["🧑", "🤖"];
 
@@ -185,11 +191,29 @@
         mode = document.getElementById('modeSelect').value;
         document.getElementById('player2Label').style.display = (mode === 'pvp') ? '' : 'none';
         document.getElementById('player2').value = (mode === 'pvp') ? '对手' : AI_NAME;
-        document.getElementById('avatar1').textContent = (mode === 'ai') ? "🤖" : "🧑";
+        document.getElementById('avatar1').textContent = (mode === 'ai') ? AVATARS[1] : AVATARS[0];
+    }
+    function onRuleChange() {
+        maxPick = parseInt(document.getElementById('ruleSelect').value, 10);
+        renderActions();
+    }
+
+    function renderActions() {
+        const actionsDiv = document.getElementById('actions');
+        actionsDiv.innerHTML = '';
+        for (let i = 1; i <= maxPick; i++) {
+            const btn = document.createElement('button');
+            btn.textContent = `捡${i}颗`;
+            btn.id = `pick${i}`;
+            btn.onclick = () => pickStones(i);
+            actionsDiv.appendChild(btn);
+        }
+        updateStatus();
     }
 
     function startGame() {
         mode = document.getElementById('modeSelect').value;
+        maxPick = parseInt(document.getElementById('ruleSelect').value, 10);
         const p1 = document.getElementById('player1').value.trim() || '你';
         const p2 = document.getElementById('player2').value.trim() || (mode === 'ai' ? AI_NAME : '对手');
         total = parseInt(document.getElementById('totalStones').value, 10);
@@ -207,6 +231,7 @@
         document.getElementById('winner').textContent = '';
         document.getElementById('avatar0').textContent = AVATARS[0];
         document.getElementById('avatar1').textContent = (mode === 'ai') ? AVATARS[1] : AVATARS[0];
+        renderActions();
         updateStonesArea();
         updateStatus();
         updateLog();
@@ -248,9 +273,13 @@
     }
 
     function updateStatus() {
+        for (let i = 1; i <= maxPick; i++) {
+            const btn = document.getElementById(`pick${i}`);
+            if (btn) {
+                btn.disabled = gameOver || stonesArr.filter(x=>x===0).length < i || (mode === 'ai' && turn === 1);
+            }
+        }
         document.getElementById('status').textContent = `轮到 ${players[turn]} 捡石子`;
-        document.getElementById('pick1').disabled = gameOver || stonesArr.filter(x=>x===0).length < 1 || (mode === 'ai' && turn === 1);
-        document.getElementById('pick2').disabled = gameOver || stonesArr.filter(x=>x===0).length < 2 || (mode === 'ai' && turn === 1);
         updateAvatars();
     }
 
@@ -264,7 +293,7 @@
     }
 
     function pickStones(n) {
-        if (gameOver || n < 1 || n > 2 || n > stonesArr.filter(x=>x===0).length) return;
+        if (gameOver || n < 1 || n > maxPick || n > stonesArr.filter(x=>x===0).length) return;
         if (mode === 'ai' && turn !== 0) return;
         let taken = [];
         for (let i = 0, cnt = 0; i < stonesArr.length && cnt < n; i++) {
@@ -299,12 +328,32 @@
         if (gameOver || turn !== 1) return;
         let left = stonesArr.filter(x=>x===0).length;
         let aiPick;
-        // AI必胜策略
-        if (left % 3 === 1) {
-            aiPick = left >= 2 ? (Math.random() < 0.5 ? 1 : 2) : 1;
+
+        // 优先直接获胜
+        if (left <= maxPick) {
+            aiPick = left;
+        } else if (maxPick === 2) {
+            // 1-2颗规则，目标让对手剩3的倍数
+            if (left % 3 === 1) {
+                aiPick = left >= 2 ? (Math.random() < 0.5 ? 1 : 2) : 1;
+            } else {
+                aiPick = left % 3 === 0 ? 2 : left % 3;
+            }
         } else {
-            aiPick = left % 3 === 0 ? 2 : left % 3;
+            // 1-3颗规则，目标让对手剩4的倍数
+            if (left <= 4) {
+                // 只要能捡完就捡完
+                aiPick = left;
+            } else if (left % 4 === 1) {
+                aiPick = Math.floor(Math.random() * 3) + 1; // 随机1~3
+            } else {
+                aiPick = left % 4;
+            }
         }
+        // 防止aiPick非法
+        if (aiPick > maxPick) aiPick = maxPick;
+        if (aiPick < 1) aiPick = 1;
+        if (aiPick > left) aiPick = left;
         let taken = [];
         for (let i = 0, cnt = 0; i < stonesArr.length && cnt < aiPick; i++) {
             if (stonesArr[i] === 0) {
@@ -333,8 +382,9 @@
         document.getElementById('setup').style.display = '';
         document.getElementById('game').style.display = 'none';
     }
-    // 初始化时根据模式显示输入框
+    // 初始化时根据模式和规则显示输入框
     onModeChange();
+    onRuleChange();
 </script>
 </body>
 </html>
