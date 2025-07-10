@@ -329,7 +329,6 @@
         let left = stonesArr.filter(x=>x===0).length;
         let aiPick;
 
-        // 优先直接获胜
         if (left <= maxPick) {
             aiPick = left;
         } else if (maxPick === 2) {
@@ -341,11 +340,11 @@
             }
         } else {
             // 1-3颗规则，目标让对手剩4的倍数
-            if (left <= 4) {
-                // 只要能捡完就捡完
-                aiPick = left;
+            if (left % 4 === 0) {
+                aiPick = 3;
             } else if (left % 4 === 1) {
-                aiPick = Math.floor(Math.random() * 3) + 1; // 随机1~3
+                // 必败局面，只能随机
+                aiPick = Math.floor(Math.random() * 3) + 1;
             } else {
                 aiPick = left % 4;
             }
