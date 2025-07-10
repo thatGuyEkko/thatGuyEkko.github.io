@@ -2,24 +2,90 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
     <title>捡石子小游戏</title>
     <style>
-        body { font-family: "微软雅黑", Arial, sans-serif; background: #f5f5f5; }
-        .container { max-width: 440px; margin: 40px auto; background: #fff; border-radius: 8px; box-shadow: 0 2px 8px #ccc; padding: 24px; }
-        h2 { text-align: center; }
-        .info, .winner { text-align: center; margin: 16px 0; }
-        .actions { display: flex; justify-content: center; gap: 16px; margin: 16px 0; }
-        button { padding: 8px 20px; font-size: 16px; border-radius: 4px; border: 1px solid #888; background: #eee; cursor: pointer; }
+        html, body { height: 100%; margin: 0; padding: 0; background: #f5f5f5; }
+        body { font-family: "微软雅黑", Arial, sans-serif; }
+        .container {
+            max-width: 98vw;
+            width: 400px;
+            margin: 2.5vh auto;
+            background: #fff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px #ccc;
+            padding: 4vw 4vw 2vw 4vw;
+            min-height: 80vh;
+        }
+        h2 { text-align: center; font-size: 1.5em; margin: 1em 0 0.5em 0; }
+        .info, .winner { text-align: center; margin: 1em 0 0.5em 0; font-size: 1.1em; }
+        .actions { display: flex; justify-content: center; gap: 5vw; margin: 1em 0; }
+        button {
+            padding: 0.7em 2em;
+            font-size: 1.1em;
+            border-radius: 6px;
+            border: 1px solid #888;
+            background: #eee;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+        button:active { background: #ddd; }
         button:disabled { background: #ccc; cursor: not-allowed; }
-        .input-row { display: flex; justify-content: center; gap: 8px; margin-bottom: 16px; }
-        input[type="number"], input[type="text"] { width: 60px; padding: 4px; }
-        .stones-area { display: flex; flex-wrap: wrap; justify-content: center; min-height: 48px; margin: 12px 0 8px 0; }
-        .stone { font-size: 28px; margin: 2px; transition: transform 0.3s; }
+        .input-row {
+            display: flex;
+            justify-content: center;
+            gap: 2vw;
+            margin-bottom: 1em;
+            flex-wrap: wrap;
+        }
+        input[type="number"], input[type="text"], select {
+            width: 22vw;
+            min-width: 70px;
+            max-width: 120px;
+            padding: 0.5em;
+            font-size: 1em;
+            border-radius: 4px;
+            border: 1px solid #bbb;
+        }
+        .stones-area {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            min-height: 48px;
+            margin: 1em 0 0.5em 0;
+            max-width: 100%;
+            word-break: break-all;
+        }
+        .stone {
+            font-size: 2em;
+            margin: 2px;
+            transition: transform 0.3s;
+            display: inline-block;
+        }
         .stone.taken { transform: scale(0); opacity: 0.2; }
-        .log-area { background: #f9f9f9; border: 1px solid #eee; border-radius: 6px; padding: 8px; height: 90px; overflow-y: auto; font-size: 14px; margin-top: 10px;}
+        .log-area {
+            background: #f9f9f9;
+            border: 1px solid #eee;
+            border-radius: 6px;
+            padding: 0.5em;
+            height: 90px;
+            overflow-y: auto;
+            font-size: 1em;
+            margin-top: 0.7em;
+            max-width: 100%;
+        }
         .log-area strong { color: #2b7; }
         .log-area .ai { color: #09c; }
         .log-area .player { color: #e67e22; }
+        @media (max-width: 500px) {
+            .container { width: 98vw; min-width: unset; padding: 2vw 2vw 2vw 2vw; }
+            h2 { font-size: 1.2em; }
+            .info, .winner { font-size: 1em; }
+            button { font-size: 1em; padding: 0.6em 1.2em; }
+            input[type="number"], input[type="text"], select { font-size: 0.95em; }
+            .log-area { font-size: 0.95em; }
+            .stone { font-size: 1.5em; }
+        }
     </style>
 </head>
 <body>
@@ -39,7 +105,7 @@
             <label id="player2Label" style="display:none;">玩家2: <input type="text" id="player2" value="对手"></label>
         </div>
         <div class="input-row">
-            <label>石子总数: <input type="number" id="totalStones" min="1" value="10"></label>
+            <label>石子总数: <input type="number" id="totalStones" min="6" max="99" value="9"></label>
         </div>
         <button onclick="startGame()">开始游戏</button>
     </div>
@@ -77,8 +143,8 @@
         const p1 = document.getElementById('player1').value.trim() || '你';
         const p2 = document.getElementById('player2').value.trim() || (mode === 'ai' ? AI_NAME : '对手');
         total = parseInt(document.getElementById('totalStones').value, 10);
-        if (isNaN(total) || total < 1) {
-            alert('请输入大于0的石子数');
+        if (isNaN(total) || total < 6 || total > 99) {
+            alert('请输入6~99之间的石子数');
             return;
         }
         players = [p1, p2];
