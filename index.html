@@ -47,27 +47,58 @@
             border-radius: 4px;
             border: 1px solid #bbb;
         }
-        #modeSelect {
-            min-width: 140px;
-            max-width: 220px;
-            width: 180px;
+        #modeSelect { min-width: 140px; max-width: 220px; width: 180px; }
+        .game-scene {
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-between;
+            margin: 1em 0 0.5em 0;
+            min-height: 80px;
+        }
+        .avatar {
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+            font-size: 2.5em;
+            position: relative;
+            transition: transform 0.2s;
+        }
+        .avatar.active {
+            animation: jump 0.5s;
+            filter: drop-shadow(0 0 8px #ffb300);
+        }
+        @keyframes jump {
+            0% { transform: scale(1) translateY(0);}
+            30% { transform: scale(1.15) translateY(-10px);}
+            60% { transform: scale(1.1) translateY(-5px);}
+            100% { transform: scale(1) translateY(0);}
         }
         .stones-area {
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             min-height: 48px;
-            margin: 1em 0 0.5em 0;
+            margin: 0.5em 0 0.5em 0;
             max-width: 100%;
             word-break: break-all;
+            position: relative;
+            flex: 1;
         }
         .stone {
             font-size: 2em;
             margin: 2px;
-            transition: transform 0.3s;
+            transition: transform 0.3s, opacity 0.3s;
             display: inline-block;
+            position: relative;
         }
         .stone.taken { transform: scale(0); opacity: 0.2; }
+        .stone.fly {
+            position: absolute !important;
+            z-index: 10;
+            transition: transform 0.6s cubic-bezier(.4,2,.6,1), opacity 0.6s;
+        }
         .log-area {
             background: #f9f9f9;
             border: 1px solid #eee;
@@ -82,6 +113,11 @@
         .log-area strong { color: #2b7; }
         .log-area .ai { color: #09c; }
         .log-area .player { color: #e67e22; }
+        .button-row {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
         @media (max-width: 500px) {
             .container { width: 98vw; min-width: unset; padding: 2vw 2vw 2vw 2vw; }
             h2 { font-size: 1.2em; }
@@ -90,11 +126,7 @@
             input[type="number"], input[type="text"], select { font-size: 0.95em; }
             .log-area { font-size: 0.95em; }
             .stone { font-size: 1.5em; }
-        }
-        .button-row {
-            display: flex;
-            justify-content: center;
-            margin-top: 10px;
+            .avatar { width: 40px; height: 40px; font-size: 1.7em; }
         }
     </style>
 </head>
@@ -123,7 +155,11 @@
     </div>
     <div id="game" style="display:none;">
         <div class="info" id="status"></div>
-        <div class="stones-area" id="stonesArea"></div>
+        <div class="game-scene">
+            <div class="avatar" id="avatar0">🧑</div>
+            <div class="stones-area" id="stonesArea"></div>
+            <div class="avatar" id="avatar1">🤖</div>
+        </div>
         <div class="info">剩余石子数：<span id="stones"></span></div>
         <div class="actions">
             <button id="pick1" onclick="pickStones(1)">捡1颗</button>
@@ -143,11 +179,13 @@
     let stonesArr = [];
     let mode = "ai"; // "ai" or "pvp"
     const AI_NAME = "捡石子大王-邹是好看";
+    const AVATARS = ["🧑", "🤖"];
 
     function onModeChange() {
         mode = document.getElementById('modeSelect').value;
         document.getElementById('player2Label').style.display = (mode === 'pvp') ? '' : 'none';
         document.getElementById('player2').value = (mode === 'pvp') ? '对手' : AI_NAME;
+        document.getElementById('avatar1').textContent = (mode === 'ai') ? "🤖" : "🧑";
     }
 
     function startGame() {
@@ -167,10 +205,18 @@
         document.getElementById('setup').style.display = 'none';
         document.getElementById('game').style.display = '';
         document.getElementById('winner').textContent = '';
+        document.getElementById('avatar0').textContent = AVATARS[0];
+        document.getElementById('avatar1').textContent = (mode === 'ai') ? AVATARS[1] : AVATARS[0];
         updateStonesArea();
         updateStatus();
         updateLog();
+        updateAvatars();
         if (mode === 'ai' && turn === 1) aiMove();
+    }
+
+    function updateAvatars() {
+        document.getElementById('avatar0').classList.toggle('active', turn === 0);
+        document.getElementById('avatar1').classList.toggle('active', turn === 1);
     }
 
     function updateStonesArea(takeIdxs=[]) {
@@ -182,12 +228,22 @@
             area.innerHTML += `<span class="${cls}" id="stone${i}">🪨</span>`;
         }
         // 动画效果
-        takeIdxs.forEach(idx => {
-            setTimeout(() => {
+        if (takeIdxs.length > 0) {
+            takeIdxs.forEach(idx => {
                 const el = document.getElementById('stone'+idx);
-                if (el) el.classList.add('taken');
-            }, 80);
-        });
+                if (el) {
+                    el.classList.add('fly');
+                    // 飞向小人
+                    const avatar = document.getElementById('avatar'+turn);
+                    const rectStone = el.getBoundingClientRect();
+                    const rectAvatar = avatar.getBoundingClientRect();
+                    const dx = rectAvatar.left + rectAvatar.width/2 - (rectStone.left + rectStone.width/2);
+                    const dy = rectAvatar.top + rectAvatar.height/2 - (rectStone.top + rectStone.height/2);
+                    el.style.transform = `translate(${dx}px,${dy}px) scale(0.2)`;
+                    el.style.opacity = 0.1;
+                }
+            });
+        }
         document.getElementById('stones').textContent = stonesArr.filter(x=>x===0).length;
     }
 
@@ -195,6 +251,7 @@
         document.getElementById('status').textContent = `轮到 ${players[turn]} 捡石子`;
         document.getElementById('pick1').disabled = gameOver || stonesArr.filter(x=>x===0).length < 1 || (mode === 'ai' && turn === 1);
         document.getElementById('pick2').disabled = gameOver || stonesArr.filter(x=>x===0).length < 2 || (mode === 'ai' && turn === 1);
+        updateAvatars();
     }
 
     function updateLog() {
@@ -220,7 +277,7 @@
         updateStonesArea(taken);
         setTimeout(() => {
             afterPick(n, taken);
-        }, 350);
+        }, 600);
     }
 
     function afterPick(n, taken) {
@@ -234,7 +291,7 @@
         } else {
             turn = 1 - turn;
             updateStatus();
-            if (mode === 'ai' && turn === 1) setTimeout(aiMove, 800);
+            if (mode === 'ai' && turn === 1) setTimeout(aiMove, 900);
         }
     }
 
@@ -269,7 +326,7 @@
                 turn = 0;
                 updateStatus();
             }
-        }, 350);
+        }, 600);
     }
 
     function resetGame() {
