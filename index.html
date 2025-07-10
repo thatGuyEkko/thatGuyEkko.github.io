@@ -118,6 +118,15 @@
             justify-content: center;
             margin-top: 10px;
         }
+        .rule-tip {
+            text-align: center;
+            color: #666;
+            font-size: 1em;
+            margin-bottom: 0.7em;
+            background: #f3f3f3;
+            border-radius: 6px;
+            padding: 0.4em 0.5em;
+        }
         @media (max-width: 500px) {
             .container { width: 98vw; min-width: unset; padding: 2vw 2vw 2vw 2vw; }
             h2 { font-size: 1.2em; }
@@ -127,12 +136,14 @@
             .log-area { font-size: 0.95em; }
             .stone { font-size: 1.5em; }
             .avatar { width: 40px; height: 40px; font-size: 1.7em; }
+            .rule-tip { font-size: 0.95em; }
         }
     </style>
 </head>
 <body>
 <div class="container">
     <h2>捡石子小游戏</h2>
+    <div class="rule-tip" id="ruleTip"></div>
     <div id="setup">
         <div class="input-row">
             <label>对战模式:
@@ -196,6 +207,7 @@
     function onRuleChange() {
         maxPick = parseInt(document.getElementById('ruleSelect').value, 10);
         renderActions();
+        updateRuleTip();
     }
 
     function renderActions() {
@@ -236,6 +248,7 @@
         updateStatus();
         updateLog();
         updateAvatars();
+        updateRuleTip(); // 新增：在游戏开始时更新规则说明
         if (mode === 'ai' && turn === 1) aiMove();
     }
 
@@ -382,6 +395,17 @@
                 updateStatus();
             }
         }, 600);
+    }
+
+    function updateRuleTip() {
+        const rule = parseInt(document.getElementById('ruleSelect').value, 10);
+        let tip = '';
+        if (rule === 2) {
+            tip = '规则：每次可捡1或2颗石子，谁捡到最后一颗石子谁获胜。';
+        } else {
+            tip = '规则：每次可捡1、2或3颗石子，谁捡到最后一颗石子谁获胜。';
+        }
+        document.getElementById('ruleTip').textContent = tip;
     }
 
     function resetGame() {
